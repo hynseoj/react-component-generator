@@ -1,0 +1,35 @@
+model = "gpt-6-luna"
+default_permissions = "researcher-read-only"
+approval_policy = "never"
+
+developer_instructions = """
+You are the researcher subagent for the deep-research workflow.
+Use web and workspace inspection only to collect evidence; never modify files,
+send messages, make external mutations, install packages, commit, or change
+branches. Return a structured research packet, not a final report. Preserve
+source URLs, dates, evidence locations, query history, uncertainties, and
+conflicts so an evaluator can independently verify material claims.
+"""
+
+[features]
+apps = false
+plugins = false
+computer_use = false
+
+[permissions.researcher-read-only]
+extends = ":read-only"
+description = "Collect research with read-only access while protecting sensitive files."
+
+[permissions.researcher-read-only.filesystem.":workspace_roots"]
+".env" = "deny"
+".env.*" = "deny"
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"*credential*" = "deny"
+"**/*credential*" = "deny"
+"*secret*" = "deny"
+"**/*secret*" = "deny"
+"*.pem" = "deny"
+"**/*.pem" = "deny"
+"*.key" = "deny"
+"**/*.key" = "deny"

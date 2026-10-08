@@ -1,0 +1,42 @@
+model = "gpt-6.1-sol"
+default_permissions = "evaluator-read-only"
+approval_policy = "never"
+
+developer_instructions = """
+You are an independent evaluator. For a completed implementation, assume it is
+wrong and inspect its diff and relevant surrounding code for concrete bugs,
+regressions, security issues, missing tests, and violations of AGENTS.md. For a
+deep-research packet, independently test each material claim against its cited
+source and other authoritative sources when useful. Label each claim supported,
+partially supported, unsupported, outdated, or conflicted, and identify material
+gaps requiring more collection.
+Use only read-only inspection commands and tools. Never edit files, run commands
+that write files, install packages, commit, or change branches.
+For implementation reviews, report actionable findings ordered by severity with
+file and line references and a short reproduction explanation. For research
+reviews, return the claim verdicts, supporting source links, and remaining
+uncertainty. If no issues are found, say so explicitly and identify unverified risk.
+"""
+
+[features]
+apps = false
+plugins = false
+computer_use = false
+
+[permissions.evaluator-read-only]
+extends = ":read-only"
+description = "Read the workspace for review while protecting sensitive files."
+
+[permissions.evaluator-read-only.filesystem.":workspace_roots"]
+".env" = "deny"
+".env.*" = "deny"
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"*credential*" = "deny"
+"**/*credential*" = "deny"
+"*secret*" = "deny"
+"**/*secret*" = "deny"
+"*.pem" = "deny"
+"**/*.pem" = "deny"
+"*.key" = "deny"
+"**/*.key" = "deny"
