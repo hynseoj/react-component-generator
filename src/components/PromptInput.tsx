@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isPromptWithinLimit, PROMPT_MAX_LENGTH } from '../utils/prompt';
 
 interface PromptInputProps {
   onGenerate: (prompt: string) => void;
@@ -16,10 +17,12 @@ const EXAMPLES = [
 
 export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
   const [prompt, setPrompt] = useState('');
+  const isPromptTooLong = !isPromptWithinLimit(prompt);
+  const canGenerate = Boolean(prompt.trim()) && !isPromptTooLong && !isLoading;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (prompt.trim() && !isLoading) {
+    if (canGenerate) {
       onGenerate(prompt.trim());
     }
   };
@@ -41,6 +44,8 @@ export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
           placeholder="예: 고객 목록 테이블 위에 들어갈 검색 필터 바를 만들어줘. 상태, 담당자, 날짜 범위 필터가 필요해."
           className="prompt-textarea"
           rows={3}
+          aria-invalid={isPromptTooLong}
+          aria-describedby="prompt-length-help"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               handleSubmit(e);
@@ -50,7 +55,7 @@ export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
         <button
           type="submit"
           className="btn-generate"
-          disabled={!prompt.trim() || isLoading}
+          disabled={!canGenerate}
         >
           {isLoading ? (
             <span className="loading-spinner">생성 중...</span>
@@ -59,6 +64,15 @@ export function PromptInput({ onGenerate, isLoading }: PromptInputProps) {
           )}
         </button>
       </form>
+      <p
+        id="prompt-length-help"
+        className={isPromptTooLong ? 'prompt-length prompt-length--error' : 'prompt-length'}
+        role={isPromptTooLong ? 'alert' : undefined}
+      >
+        {isPromptTooLong
+          ? `프롬프트는 ${PROMPT_MAX_LENGTH}자 이하로 입력해 주세요.`
+          : `${prompt.length}/${PROMPT_MAX_LENGTH}자`}
+      </p>
       <div className="prompt-examples">
         <span className="examples-label">STARTER PROMPTS — 선택하면 입력창에 채워집니다</span>
         {EXAMPLES.map((example) => (
