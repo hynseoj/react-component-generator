@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --background: #f4eedc;
+  --foreground: #1d2141;
+}
+
+body {
+  font-family: 'Noto Sans KR', ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--background);
+  background-image:
+    linear-gradient(rgba(29, 33, 65, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 33, 65, 0.045) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
