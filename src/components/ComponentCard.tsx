@@ -8,12 +8,14 @@ interface ComponentCardProps {
   onRemove: (id: string) => void;
   onRegenerate: (prompt: string) => void;
   isLoading: boolean;
+  isGenerating?: boolean;
 }
 
 type Tab = 'preview' | 'code';
 
-export function ComponentCard({ component, onRemove, onRegenerate, isLoading }: ComponentCardProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('preview');
+export function ComponentCard({ component, onRemove, onRegenerate, isLoading, isGenerating = false }: ComponentCardProps) {
+  const [selectedTab, setActiveTab] = useState<Tab>('preview');
+  const activeTab = isGenerating ? 'code' : selectedTab;
   const [previewKey, setPreviewKey] = useState(0);
   const createdAt = component.createdAt.toLocaleTimeString('ko-KR', {
     hour: '2-digit',
@@ -24,7 +26,7 @@ export function ComponentCard({ component, onRemove, onRegenerate, isLoading }: 
     <div className="component-card">
       <div className="card-header">
         <div className="card-title-group">
-          <span>GENERATED / {createdAt}</span>
+          <span>{isGenerating ? 'GENERATING' : 'GENERATED'} / {createdAt}</span>
           <p className="card-prompt">{component.prompt}</p>
         </div>
         <div className="card-actions">
@@ -33,6 +35,7 @@ export function ComponentCard({ component, onRemove, onRegenerate, isLoading }: 
             onClick={() => setPreviewKey((k) => k + 1)}
             title="미리보기 새로고침"
             aria-label="미리보기 새로고침"
+            disabled={isGenerating}
           >
             ↻
           </button>
@@ -46,30 +49,40 @@ export function ComponentCard({ component, onRemove, onRegenerate, isLoading }: 
           <button
             className="btn-remove"
             onClick={() => onRemove(component.id)}
+            disabled={isGenerating}
           >
             삭제
           </button>
         </div>
       </div>
-      <div className="card-tabs">
+      <div className="card-tabs" role="tablist" aria-label="컴포넌트 보기">
         <button
           className={`tab ${activeTab === 'preview' ? 'tab--active' : ''}`}
           onClick={() => setActiveTab('preview')}
+          role="tab"
+          id={`${component.id}-preview-tab`}
+          aria-controls={`${component.id}-panel`}
+          aria-selected={activeTab === 'preview'}
+          disabled={isGenerating}
         >
           미리보기
         </button>
         <button
           className={`tab ${activeTab === 'code' ? 'tab--active' : ''}`}
-          onClick={() => setActiveTab('code')}
+          onClick={() => { if (!isGenerating) setActiveTab('code'); }}
+          role="tab"
+          id={`${component.id}-code-tab`}
+          aria-controls={`${component.id}-panel`}
+          aria-selected={activeTab === 'code'}
         >
           코드
         </button>
       </div>
-      <div className="card-content">
+      <div className="card-content" role="tabpanel" id={`${component.id}-panel`} aria-labelledby={`${component.id}-${activeTab}-tab`} aria-busy={isGenerating}>
         {activeTab === 'preview' ? (
           <LivePreview key={previewKey} code={component.code} />
         ) : (
-          <CodeView code={component.code} />
+          <CodeView code={component.code} isStreaming={isGenerating} />
         )}
       </div>
     </div>
