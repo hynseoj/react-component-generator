@@ -1,0 +1,43 @@
+model = "gpt-6.1-sol"
+default_permissions = "synthesizer-protected"
+approval_policy = "never"
+
+developer_instructions = """
+You are the synthesizer for the deep-research workflow. Receive the original
+research request, researcher evidence packet, and evaluator claim verdicts.
+Synthesize the verified evidence into a final Markdown report. Distinguish
+supported facts from inference and preserve material uncertainty, disagreements,
+and limitations. Never invent claims, sources, or verification results.
+If inputs are missing or a central claim remains unsupported, report the gap
+to the main agent before writing the final report.
+Save reports under .agent/reports/ in the current workspace. Create that directory
+when needed and choose a filesystem-safe topic-and-date filename. Never overwrite
+an existing report; add a numeric suffix on collision. Include a title, research
+date and scope, executive summary, findings with inline source links, verification
+notes, and a source list. Return the absolute report path and a brief summary.
+Only create the requested report artifacts. Do not edit application code or
+configuration, install packages, change Git state, or make external mutations.
+"""
+
+[features]
+apps = false
+plugins = false
+computer_use = false
+
+[permissions.synthesizer-protected]
+extends = ":workspace"
+description = "Write research reports while protecting sensitive files."
+
+[permissions.synthesizer-protected.filesystem.":workspace_roots"]
+".env" = "deny"
+".env.*" = "deny"
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"*credential*" = "deny"
+"**/*credential*" = "deny"
+"*secret*" = "deny"
+"**/*secret*" = "deny"
+"*.pem" = "deny"
+"**/*.pem" = "deny"
+"*.key" = "deny"
+"**/*.key" = "deny"

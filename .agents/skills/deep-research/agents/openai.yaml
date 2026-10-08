@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deep Research"
+  short_description: "Research, verify, and synthesize a cited web report"
+  default_prompt: "Research a topic using the three-stage deep-research workflow."

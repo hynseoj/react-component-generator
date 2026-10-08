@@ -1,0 +1,33 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+default_permissions = "sensitive-file-protected"
+
+[agents.evaluator]
+description = "Independently validate implementation diffs or research evidence without changing files."
+config_file = "agents/evaluator.toml"
+
+[agents.researcher]
+description = "Collect web research evidence using read-only tools."
+config_file = "agents/researcher.toml"
+
+[agents.synthesizer]
+description = "Synthesize verified research into a cited report under .agent/reports/."
+config_file = "agents/synthesizer.toml"
+
+[permissions.sensitive-file-protected]
+extends = ":workspace"
+description = "Allow normal workspace work while denying access to sensitive files."
+
+[permissions.sensitive-file-protected.filesystem.":workspace_roots"]
+".env" = "deny"
+".env.*" = "deny"
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"*credential*" = "deny"
+"**/*credential*" = "deny"
+"*secret*" = "deny"
+"**/*secret*" = "deny"
+"*.pem" = "deny"
+"**/*.pem" = "deny"
+"*.key" = "deny"
+"**/*.key" = "deny"
