@@ -47,11 +47,17 @@ export function useComponentGenerator(): UseComponentGeneratorReturn {
       if (res.headers.get('Content-Type')?.includes('text/event-stream')) {
         if (!res.body) throw new Error('생성 응답이 비어 있습니다.');
         let complete = false;
+        let draftCode = '';
         for await (const data of readSSE(res.body)) {
-          const event = JSON.parse(data) as { type: string; code?: string; error?: string };
+          const event = JSON.parse(data) as { type: string; text?: string; code?: string; error?: string };
           if (event.type === 'error') throw new Error(event.error || 'Failed to generate component');
-          if (event.type === 'code' && typeof event.code === 'string') {
-            setDraft({ ...newComponent, code: event.code });
+          if (event.type === 'reset') {
+            draftCode = '';
+            setDraft({ ...newComponent, code: '' });
+          }
+          if (event.type === 'delta' && typeof event.text === 'string') {
+            draftCode += event.text;
+            setDraft({ ...newComponent, code: draftCode });
           }
           if (event.type === 'complete' && event.code?.trim()) {
             newComponent.code = event.code;

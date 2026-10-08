@@ -21,7 +21,7 @@ function events(items: unknown[]) {
   return new Response(items.map(item => `data: ${JSON.stringify(item)}\n\n`).join(''));
 }
 
-it('requests Anthropic streaming and sends normalized incremental and final code', async () => {
+it('requests Anthropic streaming and sends deltas with normalized final code', async () => {
   const upstream = vi.fn().mockResolvedValue(events([
     { type: 'content_block_delta', delta: { type: 'text_delta', text: '```jsx\nconst Button = () => null;' } },
     { type: 'content_block_delta', delta: { type: 'text_delta', text: '\n```' } },
@@ -33,10 +33,14 @@ it('requests Anthropic streaming and sends normalized incremental and final code
   expect(response.headers.get('Content-Type')).toContain('text/event-stream');
   const output = await response.text();
   expect(JSON.parse(upstream.mock.calls[0][1].body).stream).toBe(true);
-  expect(output).toContain('"type":"code"');
+  const messages = output.trim().split('\n\n').map(event => JSON.parse(event.slice(6)));
+  expect(messages.filter(event => event.type === 'delta')).toEqual([
+    { type: 'delta', text: '```jsx\nconst Button = () => null;' },
+    { type: 'delta', text: '\n```' },
+  ]);
   expect(output).toContain('"type":"complete"');
   expect(output).toContain('render(<Button />);');
-  expect(output).not.toContain('```');
+  expect(messages.at(-1).code).not.toContain('```');
   expect(output).not.toContain('test-key');
 });
 
@@ -50,7 +54,7 @@ it('resets partial Google code before trying the next model', async () => {
   const output = await response.text();
   expect(upstream.mock.calls[0][0]).toContain('gemini-3.1-flash-lite:streamGenerateContent?alt=sse');
   expect(upstream.mock.calls[1][0]).toContain('gemini-3.5-flash:streamGenerateContent?alt=sse');
-  expect(output).toContain('"type":"code","code":""');
+  expect(output).toContain('"type":"reset"');
   const last = output.trim().split('\n\n').at(-1)!;
   expect(last).toContain('Good');
   expect(last).not.toContain('Failed');
@@ -63,7 +67,7 @@ it('keeps rate limit and overload messages in stream errors', async () => {
   expect(await response.text()).toContain('요청이 너무 많습니다.');
 });
 
-it('forwards a code event while the upstream response is still open', async () => {
+it('forwards a delta event while the upstream response is still open', async () => {
   let upstream!: ReadableStreamDefaultController<Uint8Array>;
   const body = new ReadableStream<Uint8Array>({ start(c) { upstream = c; } });
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
@@ -72,11 +76,28 @@ it('forwards a code event while the upstream response is still open', async () =
   const reader = response.body!.getReader();
   upstream.enqueue(new TextEncoder().encode('data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"const Button = () => null;"}}\n\n'));
   const first = await reader.read();
-  expect(new TextDecoder().decode(first.value)).toContain('"type":"code"');
+  expect(new TextDecoder().decode(first.value)).toContain('"type":"delta"');
   expect(first.done).toBe(false);
   upstream.enqueue(new TextEncoder().encode('data: {"type":"message_stop"}\n\n'));
   upstream.close();
   const last = await reader.read();
   expect(new TextDecoder().decode(last.value)).toContain('"type":"complete"');
   await reader.cancel();
+});
+
+it('keeps delta payload size linear when many small chunks arrive', async () => {
+  const chunks = Array.from({ length: 100 }, () => 'x'.repeat(10));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(events([
+    ...chunks.map(text => ({ type: 'content_block_delta', delta: { type: 'text_delta', text } })),
+    { type: 'message_stop' },
+  ])));
+  const handle = await handler();
+  const response = await handle(request());
+  const output = await response.text();
+  const messages = output.trim().split('\n\n').map(event => JSON.parse(event.slice(6)));
+  const deltas = messages.filter(event => event.type === 'delta');
+  expect(deltas).toHaveLength(chunks.length);
+  expect(deltas.reduce((total, event) => total + event.text.length, 0)).toBe(chunks.join('').length);
+  expect(output.length).toBeLessThan(chunks.join('').length * 8);
+  expect(messages.at(-1).code).toBe(chunks.join(''));
 });

@@ -12,7 +12,7 @@ interface ProviderEvent {
 }
 
 export async function collectProviderStream(
-  response: Response, provider: Provider, onText: (text: string) => void,
+  response: Response, provider: Provider, onDelta: (text: string) => void,
 ): Promise<string> {
   if (!response.ok) throw new Error(`API error: ${response.status}`);
   if (!response.body) throw new Error('생성 응답이 비어 있습니다.');
@@ -47,7 +47,7 @@ export async function collectProviderStream(
     }
     if (chunk) {
       text += chunk;
-      onText(text);
+      onDelta(chunk);
     }
   }
   if (!complete) throw new Error('코드 생성 연결이 중단되었습니다. 다시 시도해주세요.');

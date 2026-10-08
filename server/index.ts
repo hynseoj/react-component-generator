@@ -112,10 +112,10 @@ async function callGoogleModel(prompt: string, apiKey: string, model: string, on
   return collectProviderStream(response, 'google', onText);
 }
 
-async function callGoogle(prompt: string, apiKey: string, onText: (text: string) => void, signal: AbortSignal): Promise<string> {
+async function callGoogle(prompt: string, apiKey: string, onText: (text: string) => void, onReset: () => void, signal: AbortSignal): Promise<string> {
   return withModelFallback(GOOGLE_MODELS, (model) => {
     signal.throwIfAborted();
-    onText('');
+    onReset();
     return callGoogleModel(prompt, apiKey, model, onText, signal);
   });
 }
@@ -183,10 +183,12 @@ const server = Bun.serve({
             const send = (event: object) => {
               if (!abort.signal.aborted) controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
             };
-            const onText = (text: string) => send({ type: 'code', code: ensureRenderCall(stripCodeFences(text)) });
+            // Draft deltas are display-only; only complete code is normalized and executable.
+            const onText = (text: string) => send({ type: 'delta', text });
+            const onReset = () => send({ type: 'reset' });
             try {
               const text = provider === 'google'
-                ? await callGoogle(prompt, resolvedKey, onText, abort.signal)
+                ? await callGoogle(prompt, resolvedKey, onText, onReset, abort.signal)
                 : await callAnthropic(prompt, resolvedKey, onText, abort.signal);
               send({ type: 'complete', code: ensureRenderCall(stripCodeFences(text)) });
             } catch (err) {

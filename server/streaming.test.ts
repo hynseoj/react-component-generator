@@ -12,8 +12,8 @@ it('emits Anthropic text chunks before completion', async () => {
     { type: 'content_block_delta', delta: { type: 'text_delta', text: ' = () => null;' } },
     { type: 'message_stop' },
   ]), 'anthropic', text => chunks.push(text));
-  expect(chunks).toEqual(['const A', 'const A = () => null;']);
-  expect(code).toBe(chunks[1]);
+  expect(chunks).toEqual(['const A', ' = () => null;']);
+  expect(code).toBe(chunks.join(''));
 });
 
 it('emits Google text but excludes thought parts', async () => {
@@ -22,8 +22,8 @@ it('emits Google text but excludes thought parts', async () => {
     { candidates: [{ content: { parts: [{ text: 'secret thought', thought: true }, { text: 'const A' }] } }] },
     { candidates: [{ content: { parts: [{ text: ' = () => null;' }] }, finishReason: 'STOP' }] },
   ]), 'google', text => chunks.push(text));
-  expect(chunks).toEqual(['const A', 'const A = () => null;']);
-  expect(code).toBe(chunks[1]);
+  expect(chunks).toEqual(['const A', ' = () => null;']);
+  expect(code).toBe(chunks.join(''));
 });
 
 it('rejects truncated, empty, and provider error streams', async () => {

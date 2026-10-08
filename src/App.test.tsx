@@ -19,7 +19,7 @@ it('streams in the result card, then renders and archives the completed componen
   expect(screen.getByRole('heading', { name: '생성된 컴포넌트' })).toBeInTheDocument();
   expect(screen.getByRole('tab', { name: '코드' })).toHaveAttribute('aria-selected', 'true');
   const send = (data: object) => controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`));
-  await act(async () => { send({ type: 'code', code: 'const Button = () => <button>' }); });
+  await act(async () => { send({ type: 'delta', text: 'const Button = () => <button>' }); });
   expect(screen.getByText('const Button = () => <button>')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Generated button' })).not.toBeInTheDocument();
   expect(localStorage.getItem(COMPONENTS_STORAGE_KEY)).toBeNull();

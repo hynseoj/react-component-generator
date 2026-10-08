@@ -22,9 +22,11 @@ it('shows incremental draft and only saves final code on completion', async () =
   act(() => { request = result.current.generate('button', undefined, 'google'); });
   expect(result.current.isLoading).toBe(true);
   expect(result.current.draft?.prompt).toBe('button');
-  s.send({ type: 'code', code: 'const Button' });
+  s.send({ type: 'delta', text: 'const Button' });
   await waitFor(() => expect(result.current.draft?.code).toBe('const Button'));
   expect(result.current.components).toHaveLength(0);
+  s.send({ type: 'delta', text: ' = () => null;' });
+  await waitFor(() => expect(result.current.draft?.code).toBe('const Button = () => null;'));
   s.send({ type: 'complete', code: 'const Button = () => null; render(<Button />);' });
   s.close();
   await act(async () => { await request; });
@@ -37,10 +39,12 @@ it('replaces a failed model draft when fallback restarts', async () => {
   const s = stream();
   const { result } = renderHook(() => useComponentGenerator());
   act(() => { void result.current.generate('button', undefined, 'google'); });
-  s.send({ type: 'code', code: 'failed model' });
+  s.send({ type: 'delta', text: 'failed model' });
   await waitFor(() => expect(result.current.draft?.code).toBe('failed model'));
-  s.send({ type: 'code', code: '' });
+  s.send({ type: 'reset' });
   await waitFor(() => expect(result.current.draft?.code).toBe(''));
+  s.send({ type: 'delta', text: 'new model' });
+  await waitFor(() => expect(result.current.draft?.code).toBe('new model'));
   s.send({ type: 'complete', code: 'final' });
   s.close();
   await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -54,7 +58,7 @@ it('keeps previous results on interrupted streams without saving partial code', 
   const s = stream();
   let request: Promise<void>;
   act(() => { request = result.current.generate('new', undefined, 'google'); });
-  s.send({ type: 'code', code: 'partial' });
+  s.send({ type: 'delta', text: 'partial' });
   s.close();
   await act(async () => { await request; });
   expect(result.current.components.map(c => c.code)).toEqual(['old']);
